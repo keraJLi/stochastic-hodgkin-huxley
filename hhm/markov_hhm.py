@@ -3,27 +3,38 @@ import pandas as pd
 from .stochastic_hhm import *
 
 
+# draw time that passes until next transition
 def draw_t_step(lambda_):
     r = np.random.random()
     return np.log(1 / r) / lambda_
 
 
+# make one step of channel state transition
+# channelss is a list of Channels objects, (e.g. K+ and Na+ channels)
 def markov_channel_step(channelss, V, t, t_max):
     channels_weights = {channels: channels.rate_total(V) for channels in channelss}
 
-    rate_total = sum(channels_weights.values())
+    # draw time point of next state transition
+    rate_total = sum(
+        channels_weights.values()
+    )  # lambda as in eq. 40 in https://doi.org/10.1016/S0006-3495(96)79494-8
     t_step = draw_t_step(rate_total)
     if t + t_step > t_max:
         t_step = t_max - t
 
+    # draw channel type of next state transition
     drawn_channels = draw_weighted(channels_weights.keys(), p=channels_weights.values())
 
+    # draw transition in drawn channel type
     transitions = drawn_channels.transition_weights(V)
     drawn_transition = draw_weighted(transitions.keys(), p=transitions.values())
     drawn_channels.make_transition(drawn_transition)
+
+    # return time point after channel transition
     return t + t_step
 
 
+# current of membrane with a single channel type under voltage clamp
 def markov_vc_current(channels, V, E, g, t_max=100):
     ts = [0]
     ps = [channels.open_proportion()]
@@ -36,9 +47,11 @@ def markov_vc_current(channels, V, E, g, t_max=100):
     return ts, g * np.array(ps) * (np.array([V(t) for t in ts]) - E)
 
 
+# complete simulation with injected current (depending on t)
 def markov_hhm(
     I_e=lambda t: 0, C_m=1, num_K=1000, num_Na=1000, V_0=-65, t_max=50,
 ):
+    # initialize channels
     k_channels = KChannels(num_K)
     na_channels = NaChannels(num_Na)
 
@@ -78,7 +91,6 @@ def markov_hhm(
             k: data[-1][k] + (new_t - last["t"]) * v for k, v in integrate.items()
         }
         data.append({**update, **integrate})
-        print(last["t"])
 
     return pd.DataFrame(
         data,

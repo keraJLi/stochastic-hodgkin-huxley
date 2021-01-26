@@ -35,6 +35,7 @@ def I_leak(V):
     return g_leak * (V - E_leak)
 
 
+# current of membrane with only K+ channels under voltage clamp
 def vc_current_K(
     V, n_0=0.3117, t_max=100, t_step=0.01,
 ):
@@ -47,6 +48,7 @@ def vc_current_K(
     return ts, g_K * np.array(ns) ** 4 * (np.array([V(t) for t in ts]) - E_K)
 
 
+# current of membrane with only Na+ channels under voltage clamp
 def vc_current_Na(
     V, m_0=0.0529, h_0=0.5961, t_max=100, t_step=0.01,
 ):
@@ -63,6 +65,7 @@ def vc_current_Na(
     )
 
 
+# complete hodgkin huxley model
 def hhm(
     I_e=lambda t: 0,
     C_m=1,
@@ -87,6 +90,7 @@ def hhm(
 
     for t in np.arange(0, t_max + t_step, t_step)[1:]:
         last = data[-1]
+        # things that we update (not ODEs)
         update = {
             "t": last["t"] + t_step,
             "I_K": g_K * last["n"] ** 4 * (last["V"] - E_K),
@@ -94,6 +98,7 @@ def hhm(
             "I_leak": I_leak(last["V"]),
             "I_e": I_e(t),
         }
+        # things that we integrate (ODEs)
         integrate = {
             **{x: dx[x](last[x], last["V"]) for x in ["n", "m", "h"]},
             "V": (-last["I_Na"] - last["I_K"] - last["I_leak"] + last["I_e"]) / C_m,
