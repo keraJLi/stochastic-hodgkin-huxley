@@ -130,7 +130,7 @@ def stochastic_transition(channels, V, t_step):
         # one channel is bernoulli distributed around t_step * sum rates
         rates_state = channels.rates_state(state, V)
         transitioning = np.random.binomial(
-            channels.states[state], t_step * sum(rates_state.values())
+            channels.states[state], min(1, t_step * sum(rates_state.values()))
         )
         channels.states[state] -= transitioning
 
@@ -194,8 +194,6 @@ def stochastic_hhm(
         }
         integrate = {k: data[-1][k] + t_step * v for k, v in integrate.items()}
         data.append({**update, **integrate})
-        # print(last["open_rate_K"])
-        # print(last["open_rate_Na"])
 
     return pd.DataFrame(
         data,

@@ -15,9 +15,8 @@ def markov_channel_step(channelss, V, t, t_max):
     channels_weights = {channels: channels.rate_total(V) for channels in channelss}
 
     # draw time point of next state transition
-    rate_total = sum(
-        channels_weights.values()
-    )  # lambda as in eq. 40 in https://doi.org/10.1016/S0006-3495(96)79494-8
+    # lambda as in eq. 40 in https://doi.org/10.1016/S0006-3495(96)79494-8
+    rate_total = sum(channels_weights.values())
     t_step = draw_t_step(rate_total)
     if t + t_step > t_max:
         t_step = t_max - t
